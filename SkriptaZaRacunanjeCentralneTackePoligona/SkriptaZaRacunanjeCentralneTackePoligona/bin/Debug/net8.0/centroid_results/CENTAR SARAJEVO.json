@@ -1,0 +1,7 @@
+{
+  "area" : "CENTAR SARAJEVO",
+  "centroid" : {
+    "type" : "Point",
+    "coordinates" : [18.417220594067437, 43.900405395632859]
+  }
+}

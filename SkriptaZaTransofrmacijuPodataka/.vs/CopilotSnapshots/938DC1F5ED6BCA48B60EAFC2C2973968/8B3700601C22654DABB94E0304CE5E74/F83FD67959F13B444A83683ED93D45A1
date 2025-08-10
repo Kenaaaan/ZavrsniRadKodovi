@@ -1,0 +1,66 @@
+﻿using Newtonsoft.Json;
+using System.ComponentModel;
+using System.Xml;
+using ClosedXML.Excel;
+
+try
+{
+    // Use verbatim string literal to fix unrecognized escape sequence errors
+    var filePath = @"C:\Users\kenan\OneDrive\Desktop\stanovnistvoData.xlsx";
+
+    Console.WriteLine("Učitavanje Excel fajla i transformacija podataka...");
+    var lokacije = new List<Lokacija>();
+
+    using (var workbook = new XLWorkbook(filePath))
+    {
+        var worksheet = workbook.Worksheet(1); // Koristi prvi worksheet
+        Console.WriteLine($"Učitan worksheet: {worksheet.Name}");
+
+        string trenutnaLokacija = null;
+        Lokacija aktivnaLokacija = null;
+        int brojRedova = worksheet.LastRowUsed().RowNumber();
+        Console.WriteLine($"Pronađeno {brojRedova} redova u Excel fajlu.");
+
+        // Analiza headerova za debug
+        Console.WriteLine("Analiza headerova tabele:");
+        for (int col = 1; col <= 20; col++) // Prvi 20 kolona
+        {
+            Console.WriteLine($"Kolona {col}: '{worksheet.Cell(6, col).GetString()}'");
+        }
+
+        // Detaljnija analiza ćelija za prvih nekoliko redova
+        Console.WriteLine("\nDetaljna analiza prvih 15 redova:");
+        for (int row = 7; row <= Math.Min(brojRedova, 22); row++)
+        {
+            Console.WriteLine($"Red {row}: B='{worksheet.Cell(row, 2).GetString()}', C='{worksheet.Cell(row, 3).GetString()}', D='{worksheet.Cell(row, 4).GetString()}'");
+        }
+
+        for (int row = 7; row <= brojRedova; row++)
+        {
+            // Get cell values
+            string lokacija = GetCellStringValue(worksheet, row, 2);
+            string starost = GetCellStringValue(worksheet, row, 3);
+            string pol = GetCellStringValue(worksheet, row, 4);
+            string ukupno = GetCellStringValue(worksheet, row, 5);
+
+            // Detaljniji debug za svaki red
+            Console.WriteLine($"\nAnaliza reda {row}:");
+            Console.WriteLine($"  B({row},2): '{lokacija}', prazno: {string.IsNullOrEmpty(lokacija)}");
+            Console.WriteLine($"  C({row},3): '{starost}', prazno: {string.IsNullOrEmpty(starost)}");
+            Console.WriteLine($"  D({row},4): '{pol}', prazno: {string.IsNullOrEmpty(pol)}");
+            Console.WriteLine($"  E({row},5): '{ukupno}', prazno: {string.IsNullOrEmpty(ukupno)}");
+
+            // Provera da li je red prazan
+            if (string.IsNullOrEmpty(lokacija) && 
+                string.IsNullOrEmpty(starost) && 
+                string.IsNullOrEmpty(pol))
+            {
+                Console.WriteLine($"  Red {row} je prazan, preskačem.");
+                continue; // Preskoči prazne redove
+            }
+
+            // Detekcija nove lokacije (ako postoji vrijednost u koloni B i ne postoji vrijednost u koloni C)
+            if (!string.IsNullOrEmpty(lokacija) && string.IsNullOrEmpty(starost))
+            {
+                trenutnaLokacija = lokacija;
+                aktivnaLokacija = lokice

@@ -1,0 +1,7 @@
+{
+  "area" : "NOVI GRAD SARAJEVO",
+  "centroid" : {
+    "type" : "Point",
+    "coordinates" : [18.318359965649154, 43.870706123413648]
+  }
+}

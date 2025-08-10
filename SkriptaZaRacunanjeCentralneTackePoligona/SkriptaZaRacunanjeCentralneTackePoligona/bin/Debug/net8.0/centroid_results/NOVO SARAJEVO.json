@@ -1,0 +1,7 @@
+{
+  "area" : "NOVO SARAJEVO",
+  "centroid" : {
+    "type" : "Point",
+    "coordinates" : [18.387751716342009, 43.856713099345484]
+  }
+}

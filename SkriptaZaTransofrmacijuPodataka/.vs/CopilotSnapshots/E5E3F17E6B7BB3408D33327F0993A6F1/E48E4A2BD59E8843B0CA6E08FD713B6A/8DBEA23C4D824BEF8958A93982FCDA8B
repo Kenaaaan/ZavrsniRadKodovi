@@ -1,0 +1,207 @@
+﻿using Newtonsoft.Json;
+using OfficeOpenXml;
+using System.ComponentModel;
+using System.Xml;
+
+// Set EPPlus license context
+ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+
+try
+{
+    // Ask user for Excel file path
+    Console.WriteLine("Unesite putanju do Excel fajla:");
+    var filePath = Console.ReadLine()?.Trim();
+
+    if (string.IsNullOrEmpty(filePath))
+    {
+        Console.WriteLine("Putanja nije validna.");
+        return;
+    }
+
+    if (!File.Exists(filePath))
+    {
+        Console.WriteLine($"Fajl nije pronađen na putanji: {filePath}");
+        return;
+    }
+
+    Console.WriteLine("Učitavanje Excel fajla i transformacija podataka...");
+    var opstine = new List<OpstinaDokument>();
+
+    using (var package = new ExcelPackage(new FileInfo(filePath)))
+    {
+        var worksheet = package.Workbook.Worksheets[0]; // Koristi prvi worksheet
+        Console.WriteLine($"Učitan worksheet: {worksheet.Name}");
+
+        string trenutnaOpstina = null;
+        OpstinaDokument aktivnaOpstina = null;
+        int brojRedova = worksheet.Dimension.End.Row;
+        Console.WriteLine($"Pronađeno {brojRedova} redova u Excel fajlu.");
+
+        for (int row = 7; row <= brojRedova; row++)
+        {
+            // Provjera da li je red prazan
+            if (string.IsNullOrWhiteSpace(worksheet.Cells[row, 3].Text) &&
+                string.IsNullOrWhiteSpace(worksheet.Cells[row, 4].Text) &&
+                string.IsNullOrWhiteSpace(worksheet.Cells[row, 5].Text))
+            {
+                continue; // Preskoči prazne redove
+            }
+
+            string opstina = worksheet.Cells[row, 2].Text.Trim();
+            string starost = worksheet.Cells[row, 3].Text.Trim();
+            string pol = worksheet.Cells[row, 4].Text.Trim();
+            string ukupno = worksheet.Cells[row, 5].Text.Trim();
+
+            // Detekcija nove opštine
+            if (!string.IsNullOrEmpty(opstina))
+            {
+                trenutnaOpstina = opstina;
+                aktivnaOpstina = opstine.FirstOrDefault(o => o.opstina == opstina);
+                if (aktivnaOpstina == null)
+                {
+                    aktivnaOpstina = new OpstinaDokument { opstina = opstina, starosne_grupe = new List<StarosnaGrupa>() };
+                    opstine.Add(aktivnaOpstina);
+                    Console.WriteLine($"Dodata nova opština: {opstina}");
+                }
+            }
+
+            // Provera da li je aktivna opština postavljena
+            if (aktivnaOpstina == null)
+            {
+                Console.WriteLine($"Upozorenje: Red {row} nema dodeljenu opštinu, preskačem.");
+                continue;
+            }
+
+            // Samo redovi sa starosnom grupom i ukupno su relevantni
+            if (!string.IsNullOrEmpty(starost) && pol.Contains("Ukupno"))
+            {
+                // Provjera da li je starost validan broj
+                if (!int.TryParse(starost, out int godina))
+                {
+                    Console.WriteLine($"Upozorenje: Red {row} ima nevažeću starost: '{starost}', preskačem.");
+                    continue;
+                }
+
+                // Provjera da li ukupno može biti konvertovano u broj
+                if (!int.TryParse(ukupno, out int ukupnoVrednost))
+                {
+                    Console.WriteLine($"Upozorenje: Red {row} ima nevažeću ukupnu vrednost: '{ukupno}', preskačem.");
+                    continue;
+                }
+
+                // Provjera da li postoje naredni redovi za muški i ženski pol
+                if (row + 2 <= brojRedova)
+                {
+                    int muski = 0;
+                    int zenski = 0;
+
+                    // Provjera za muški pol
+                    string muskiText = worksheet.Cells[row + 1, 5].Text.Trim();
+                    if (!int.TryParse(muskiText, out muski))
+                    {
+                        Console.WriteLine($"Upozorenje: Nevažeća vrednost za muški pol u redu {row + 1}: '{muskiText}', postavljam na 0.");
+                    }
+
+                    // Provjera za ženski pol
+                    string zenskiText = worksheet.Cells[row + 2, 5].Text.Trim();
+                    if (!int.TryParse(zenskiText, out zenski))
+                    {
+                        Console.WriteLine($"Upozorenje: Nevažeća vrednost za ženski pol u redu {row + 2}: '{zenskiText}', postavljam na 0.");
+                    }
+
+                    var sg = new StarosnaGrupa
+                    {
+                        godina = godina,
+                        ukupno = ukupnoVrednost,
+                        muski = muski,
+                        zenski = zenski,
+                        skolovanje = new Skolovanje
+                        {
+                            ne_skoluje_se = ParseCellValue(worksheet.Cells[row, 6].Text),
+                            predskolsko = ParseCellValue(worksheet.Cells[row, 7].Text),
+                            osnovna = ParseCellValue(worksheet.Cells[row, 8].Text),
+                            srednja = ParseCellValue(worksheet.Cells[row, 9].Text),
+                            visa_skola = ParseCellValue(worksheet.Cells[row, 11].Text)
+                            // Dodaj ostale kategorije prema potrebi
+                        }
+                    };
+                    aktivnaOpstina.starosne_grupe.Add(sg);
+                    Console.WriteLine($"Dodata starosna grupa {godina} za opštinu {aktivnaOpstina.opstina}");
+                }
+                else
+                {
+                    Console.WriteLine($"Upozorenje: Nedovoljno redova za podatke o polu za starosnu grupu u redu {row}.");
+                }
+            }
+        }
+    }
+
+    // Provjera da li ima podataka
+    if (opstine.Count == 0)
+    {
+        Console.WriteLine("Upozorenje: Nema pronađenih podataka za opštine.");
+    }
+    else
+    {
+        Console.WriteLine($"Pronađeno {opstine.Count} opština sa podacima.");
+
+        // Pitaj korisnika za ime izlaznog fajla
+        Console.WriteLine("Unesite ime izlaznog JSON fajla (bez ekstenzije):");
+        string outputFileName = Console.ReadLine()?.Trim() ?? "opstine";
+        if (!outputFileName.EndsWith(".json"))
+        {
+            outputFileName += ".json";
+        }
+
+        // Serializacija u JSON
+        string jsonContent = JsonConvert.SerializeObject(opstine, Newtonsoft.Json.Formatting.Indented);
+        File.WriteAllText(outputFileName, jsonContent);
+        Console.WriteLine($"Podaci su uspješno sačuvani u fajl: {Path.GetFullPath(outputFileName)}");
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Greška: {ex.Message}");
+    Console.WriteLine(ex.StackTrace);
+}
+
+Console.WriteLine("Pritisnite bilo koju tipku za izlaz...");
+Console.ReadKey();
+
+// Pomoćna metoda za parsiranje vrijednosti ćelije
+int ParseCellValue(string cellValue)
+{
+    if (string.IsNullOrWhiteSpace(cellValue) || cellValue == "-")
+        return 0;
+
+    if (int.TryParse(cellValue, out int result))
+        return result;
+
+    return 0;
+}
+
+// --- Modeli ---
+public class OpstinaDokument
+{
+    public string opstina { get; set; }
+    public List<StarosnaGrupa> starosne_grupe { get; set; }
+}
+
+public class StarosnaGrupa
+{
+    public int godina { get; set; }
+    public int ukupno { get; set; }
+    public int muski { get; set; }
+    public int zenski { get; set; }
+    public Skolovanje skolovanje { get; set; }
+}
+
+public class Skolovanje
+{
+    public int ne_skoluje_se { get; set; }
+    public int predskolsko { get; set; }
+    public int osnovna { get; set; }
+    public int srednja { get; set; }
+    public int visa_skola { get; set; }
+    // Dodaj ostale prema headerima
+}

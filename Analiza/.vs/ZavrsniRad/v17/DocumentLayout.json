@@ -1,0 +1,54 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\kenan\\OneDrive\\Desktop\\ZavrsniRadKodovi\\Analiza\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{55CB1274-1192-CDAF-8990-268B67217853}|SchoolOptimizationApp\\SchoolOptimization.csproj|c:\\users\\kenan\\onedrive\\desktop\\zavrsniradkodovi\\analiza\\schooloptimizationapp\\schoollocationoptimizer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{55CB1274-1192-CDAF-8990-268B67217853}|SchoolOptimizationApp\\SchoolOptimization.csproj|solutionrelative:schooloptimizationapp\\schoollocationoptimizer.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{55CB1274-1192-CDAF-8990-268B67217853}|SchoolOptimizationApp\\SchoolOptimization.csproj|c:\\users\\kenan\\onedrive\\desktop\\zavrsniradkodovi\\analiza\\schooloptimizationapp\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{55CB1274-1192-CDAF-8990-268B67217853}|SchoolOptimizationApp\\SchoolOptimization.csproj|solutionrelative:schooloptimizationapp\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 0,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "SchoolLocationOptimizer.cs",
+              "DocumentMoniker": "C:\\Users\\kenan\\OneDrive\\Desktop\\ZavrsniRadKodovi\\Analiza\\SchoolOptimizationApp\\SchoolLocationOptimizer.cs",
+              "RelativeDocumentMoniker": "SchoolOptimizationApp\\SchoolLocationOptimizer.cs",
+              "ToolTip": "C:\\Users\\kenan\\OneDrive\\Desktop\\ZavrsniRadKodovi\\Analiza\\SchoolOptimizationApp\\SchoolLocationOptimizer.cs",
+              "RelativeToolTip": "SchoolOptimizationApp\\SchoolLocationOptimizer.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAA9AAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-08-10T23:38:37.074Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\kenan\\OneDrive\\Desktop\\ZavrsniRadKodovi\\Analiza\\SchoolOptimizationApp\\Program.cs",
+              "RelativeDocumentMoniker": "SchoolOptimizationApp\\Program.cs",
+              "ToolTip": "C:\\Users\\kenan\\OneDrive\\Desktop\\ZavrsniRadKodovi\\Analiza\\SchoolOptimizationApp\\Program.cs",
+              "RelativeToolTip": "SchoolOptimizationApp\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-08-10T23:38:22.294Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

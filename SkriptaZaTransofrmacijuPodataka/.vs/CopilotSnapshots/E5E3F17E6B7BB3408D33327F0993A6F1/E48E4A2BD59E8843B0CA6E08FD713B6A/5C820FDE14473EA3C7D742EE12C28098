@@ -1,0 +1,85 @@
+﻿using Newtonsoft.Json;
+using OfficeOpenXml;
+using System.ComponentModel;
+using System.Xml;
+
+var filePath = @"path\to\tvoj.xlsx";
+var opstine = new List<OpstinaDokument>();
+
+ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+using (var package = new ExcelPackage(new FileInfo(filePath)))
+{
+    var worksheet = package.Workbook.Worksheets[0];
+
+    string trenutnaOpstina = null;
+    OpstinaDokument aktivnaOpstina = null;
+    for (int row = 7; row <= worksheet.Dimension.End.Row; row++)
+    {
+        string opstina = worksheet.Cells[row, 2].Text.Trim();
+        string starost = worksheet.Cells[row, 3].Text.Trim();
+        string pol = worksheet.Cells[row, 4].Text.Trim();
+        string ukupno = worksheet.Cells[row, 5].Text.Trim();
+
+        // Detekcija nove opštine
+        if (!string.IsNullOrEmpty(opstina))
+        {
+            trenutnaOpstina = opstina;
+            aktivnaOpstina = opstine.FirstOrDefault(o => o.opstina == opstina);
+            if (aktivnaOpstina == null)
+            {
+                aktivnaOpstina = new OpstinaDokument { opstina = opstina, starosne_grupe = new List<StarosnaGrupa>() };
+                opstine.Add(aktivnaOpstina);
+            }
+        }
+
+        // Samo redovi sa starosnom grupom "Ukupno/Total" su relevantni za agregat
+        if (starost != "" && pol.Contains("Ukupno"))
+        {
+            int godina = int.Parse(starost);
+            var sg = new StarosnaGrupa
+            {
+                godina = godina,
+                ukupno = int.Parse(ukupno),
+                muski = int.Parse(worksheet.Cells[row + 1, 5].Text),   // sljedeći red je muškarci
+                zenski = int.Parse(worksheet.Cells[row + 2, 5].Text),  // nakon toga žene
+                skolovanje = new Skolovanje
+                {
+                    ne_skoluje_se = int.Parse(worksheet.Cells[row, 6].Text),
+                    predskolsko = worksheet.Cells[row, 7].Text == "-" ? 0 : int.Parse(worksheet.Cells[row, 7].Text),
+                    osnovna = worksheet.Cells[row, 8].Text == "-" ? 0 : int.Parse(worksheet.Cells[row, 8].Text),
+                    srednja = worksheet.Cells[row, 9].Text == "-" ? 0 : int.Parse(worksheet.Cells[row, 9].Text),
+                    visa_skola = worksheet.Cells[row, 11].Text == "-" ? 0 : int.Parse(worksheet.Cells[row, 11].Text)
+                    // Dodaj ostale kategorije prema potrebi
+                }
+            };
+            aktivnaOpstina.starosne_grupe.Add(sg);
+        }
+    }
+}
+
+// Serializacija u JSON
+File.WriteAllText("opstine.json", JsonConvert.SerializeObject(opstine, (Newtonsoft.Json.Formatting)System.Xml.Formatting.Indented));
+
+// --- Modeli ---
+public class OpstinaDokument
+{
+    public string opstina { get; set; }
+    public List<StarosnaGrupa> starosne_grupe { get; set; }
+}
+public class StarosnaGrupa
+{
+    public int godina { get; set; }
+    public int ukupno { get; set; }
+    public int muski { get; set; }
+    public int zenski { get; set; }
+    public Skolovanje skolovanje { get; set; }
+}
+public class Skolovanje
+{
+    public int ne_skoluje_se { get; set; }
+    public int predskolsko { get; set; }
+    public int osnovna { get; set; }
+    public int srednja { get; set; }
+    public int visa_skola { get; set; }
+    // Dodaj ostale prema headerima
+}

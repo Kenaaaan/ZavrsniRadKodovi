@@ -1,0 +1,7 @@
+{
+  "area" : "STARI GRAD SARAJEVO",
+  "centroid" : {
+    "type" : "Point",
+    "coordinates" : [18.460456565374631, 43.8994337753848]
+  }
+}

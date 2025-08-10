@@ -1,0 +1,176 @@
+﻿using Newtonsoft.Json;
+using OfficeOpenXml;
+using System.ComponentModel;
+using System.Xml;
+
+// Set EPPlus license context
+ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+
+try
+{
+    // Use verbatim string literal to fix unrecognized escape sequence errors
+    var filePath = @"C:\Users\kenan\OneDrive\Desktop\stanovnistvoData.xlsx";
+
+    Console.WriteLine("Učitavanje Excel fajla i transformacija podataka...");
+    var lokacije = new List<Lokacija>();
+
+    using (var package = new ExcelPackage(new FileInfo(filePath)))
+    {
+        var worksheet = package.Workbook.Worksheets[0]; // Koristi prvi worksheet
+        Console.WriteLine($"Učitan worksheet: {worksheet.Name}");
+
+        string trenutnaLokacija = null;
+        Lokacija aktivnaLokacija = null;
+        int brojRedova = worksheet.Dimension.End.Row;
+        Console.WriteLine($"Pronađeno {brojRedova} redova u Excel fajlu.");
+
+        for (int row = 7; row <= brojRedova; row++)
+        {
+            // Provera da li je red prazan
+            if (string.IsNullOrWhiteSpace(worksheet.Cells[row, 2].Text) && 
+                string.IsNullOrWhiteSpace(worksheet.Cells[row, 3].Text) && 
+                string.IsNullOrWhiteSpace(worksheet.Cells[row, 4].Text) && 
+                string.IsNullOrWhiteSpace(worksheet.Cells[row, 5].Text))
+            {
+                continue; // Preskoči prazne redove
+            }
+
+            string lokacija = worksheet.Cells[row, 2].Text.Trim();
+            string starost = worksheet.Cells[row, 3].Text.Trim();
+            string pol = worksheet.Cells[row, 4].Text.Trim();
+            string ukupno = worksheet.Cells[row, 5].Text.Trim();
+
+            // Detekcija nove lokacije
+            if (!string.IsNullOrEmpty(lokacija))
+            {
+                trenutnaLokacija = lokacija;
+                aktivnaLokacija = lokacije.FirstOrDefault(o => o.area == lokacija);
+                if (aktivnaLokacija == null)
+                {
+                    aktivnaLokacija = new Lokacija { area = lokacija, ages = new List<Age>() };
+                    lokacije.Add(aktivnaLokacija);
+                    Console.WriteLine($"Dodata nova lokacija: {lokacija}");
+                }
+            }
+
+            // Provera da li je aktivna lokacija postavljena
+            if (aktivnaLokacija == null)
+            {
+                Console.WriteLine($"Upozorenje: Red {row} nema dodeljenu lokaciju, preskačem.");
+                continue;
+            }
+
+            // Uzimamo samo redove sa "Ukupno/Total" u polju pol
+            if (!string.IsNullOrEmpty(starost) && pol.Contains("Ukupno") && pol.Contains("Total"))
+            {
+                // Provjera da li je starost validan broj
+                if (!int.TryParse(starost, out int godina))
+                {
+                    Console.WriteLine($"Upozorenje: Red {row} ima nevažeću starost: '{starost}', preskačem.");
+                    continue;
+                }
+
+                // Provjera da li ukupno može biti konvertovano u broj
+                if (!int.TryParse(ukupno, out int ukupnoVrednost))
+                {
+                    Console.WriteLine($"Upozorenje: Red {row} ima nevažeću ukupnu vrednost: '{ukupno}', preskačem.");
+                    continue;
+                }
+
+                var ageData = new Age
+                {
+                    age = godina,
+                    total = ukupnoVrednost,
+                    education = new Education
+                    {
+                        not_attending = ParseCellValue(worksheet.Cells[row, 6].Text),
+                        preschool = ParseCellValue(worksheet.Cells[row, 7].Text),
+                        primary = ParseCellValue(worksheet.Cells[row, 8].Text),
+                        secondary = ParseCellValue(worksheet.Cells[row, 9].Text),
+                        post_secondary = ParseCellValue(worksheet.Cells[row, 10].Text),
+                        higher = ParseCellValue(worksheet.Cells[row, 11].Text),
+                        basic_academic = ParseCellValue(worksheet.Cells[row, 12].Text),
+                        specialist = ParseCellValue(worksheet.Cells[row, 13].Text),
+                        masters = ParseCellValue(worksheet.Cells[row, 14].Text),
+                        doctoral = ParseCellValue(worksheet.Cells[row, 15].Text),
+                        first_cycle = ParseCellValue(worksheet.Cells[row, 16].Text),
+                        second_cycle = ParseCellValue(worksheet.Cells[row, 17].Text),
+                        integrated_cycle = ParseCellValue(worksheet.Cells[row, 18].Text),
+                        third_cycle = ParseCellValue(worksheet.Cells[row, 19].Text)
+                    }
+                };
+
+                aktivnaLokacija.ages.Add(ageData);
+                Console.WriteLine($"Dodata starosna grupa {godina} za lokaciju {aktivnaLokacija.area}");
+            }
+        }
+    }
+
+    // Provjera da li ima podataka
+    if (lokacije.Count == 0)
+    {
+        Console.WriteLine("Upozorenje: Nema pronađenih podataka za lokacije.");
+    }
+    else
+    {
+        Console.WriteLine($"Pronađeno {lokacije.Count} lokacija sa podacima.");
+
+        // Serializacija u JSON
+        string outputFileName = "stanovnistvo.json";
+        string jsonContent = JsonConvert.SerializeObject(lokacije, Newtonsoft.Json.Formatting.Indented);
+        File.WriteAllText(outputFileName, jsonContent);
+        Console.WriteLine($"Podaci su uspješno sačuvani u fajl: {Path.GetFullPath(outputFileName)}");
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Greška: {ex.Message}");
+    Console.WriteLine(ex.StackTrace);
+}
+
+Console.WriteLine("Pritisnite bilo koju tipku za izlaz...");
+Console.ReadKey();
+
+// Pomoćna metoda za parsiranje vrijednosti ćelije
+int ParseCellValue(string cellValue)
+{
+    if (string.IsNullOrWhiteSpace(cellValue) || cellValue == "-")
+        return 0;
+
+    if (int.TryParse(cellValue, out int result))
+        return result;
+
+    return 0;
+}
+
+// --- Novi modeli prilagođeni zahtjevima ---
+public class Lokacija
+{
+    public string area { get; set; }
+    public List<Age> ages { get; set; }
+}
+
+public class Age
+{
+    public int age { get; set; }
+    public int total { get; set; }
+    public Education education { get; set; }
+}
+
+public class Education
+{
+    public int not_attending { get; set; }
+    public int preschool { get; set; }
+    public int primary { get; set; }
+    public int secondary { get; set; }
+    public int post_secondary { get; set; }
+    public int higher { get; set; }
+    public int basic_academic { get; set; }
+    public int specialist { get; set; }
+    public int masters { get; set; }
+    public int doctoral { get; set; }
+    public int first_cycle { get; set; }
+    public int second_cycle { get; set; }
+    public int integrated_cycle { get; set; }
+    public int third_cycle { get; set; }
+}
